@@ -35,3 +35,6 @@ flask micro-framework. The project contains the following concepts:
   4. run the command: `python3 run.py`
   5. open your browser and write the following link: `http://localhost:5000`
   6. to get the JSON endpoint, go to the following path in your browser: `http://localhost:5000/catalog/JSON`
+
+### Preview
+![Item Catalog Application](preview.png?raw=true "Item Catalog Application")
