@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>{{category.name}}</h2>
+{% if category.items%}
+<div class="content-section">
+  {% for item in category.items%}
+  <div class="media">
+    <div class="media-body">
+      <h4 class="">{{item.name}}</h4>
+      <p class="text-secondary">Price: {{item.price}}</p>
+      <p class="text-secondary">Desc: {{item.desc}}</p>
+      <p class="text-secondary">By: {{item.owner_username}}</p>
+      {% if item.owner_username == user.username %}
+      <a class="btn btn-primary" href="{{url_for('edit_item', item_id=item.id)}}">Edit</a>
+      <button type="button" class="btn btn-danger m-1" data-toggle="modal" data-target="#deleteModal">Delete</button>
+      {% endif %}
+      <hr>
+    </div>
+  </div>
+      <!-- Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Delete Item?</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <form action="{{ url_for('delete_item', item_id=item.id) }}" method="POST">
+            <input class="btn btn-danger" type="submit" value="Delete">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="content-section">
+  <div class="media">
+    <div class="media-body">
+      This category has no items!
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if user.is_authenticated %}
+<div class="row">
+  <div class="col text-center">
+          <a class="btn btn-success mb-2" href="{{url_for('new_item')}}">Add New Items</a>
+  </div>
+</div>
+{% endif %}
+{% endblock content %}

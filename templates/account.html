@@ -1,0 +1,80 @@
+{% extends "layout.html" %} {% block content %}
+<div class="">
+  <div class="media">
+    <div class="media-body">
+      <div class="row">
+        <div class="col-4">
+          <p class="alert alert-info text-center">
+            <b>{{user.email}}</b>
+          </p>
+        </div>
+        <div class="col-4">
+          <p class="alert alert-info text-center">
+            <b>{{user.username}}</b>
+          </p>
+        </div>
+        <div class="col-4">
+          <p class="alert alert-info text-center">
+            <b>Number of items</b>
+            <span class="badge badge-primary">{{count}}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col">
+    <h3>Items:</h3>
+  </div>
+</div>
+{% if user.items%}
+<div class="content-section">
+  {% for item in user.items%}
+  <div class="media">
+    <div class="media-body">
+      <h4 class="">{{item.name}}</h4>
+      <p class="text-secondary">Price: {{item.price}}</p>
+      <p class="text-secondary">Desc: {{item.desc}}</p>
+      <p class="text-secondary">Cat. Name: {{item.category_name}}</p>
+      <a class="btn btn-primary" href="{{url_for('edit_item', item_id=item.id)}}">Edit</a>
+      <button type="button" class="btn btn-danger m-1" data-toggle="modal" data-target="#deleteModal">Delete</button>
+      <hr>
+    </div>
+  </div>
+  <!-- Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Delete Item?</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <form action="{{ url_for('delete_item', item_id=item.id) }}" method="POST">
+            <input class="btn btn-danger" type="submit" value="Delete">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="content-section">
+  <div class="media">
+    <div class="media-body">
+      You don't have any items!
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="row">
+  <div class="col text-center">
+    <a class="btn btn-success mb-2" href="{{url_for('new_item')}}">Add New Items</a>
+  </div>
+</div>
+{% endblock content %}
