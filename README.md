@@ -34,3 +34,4 @@ flask micro-framework. The project contains the following concepts:
   3. if you got the message "Database tables created", then this means that the script has successfully created the .db file **you should find a file called `database.db` in the project directory**
   4. run the command: `python3 run.py`
   5. open your browser and write the following link: `http://localhost:5000`
+  6. to get the JSON endpoint, go to the following path in your browser: `http://localhost:5000/catalog/JSON`
