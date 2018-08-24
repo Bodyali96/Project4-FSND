@@ -16,15 +16,7 @@ flask micro-framework. The project contains the following concepts:
 * Python 3
 * pip
 * git or powershell
-* installing the following packages using pip (pip install xxx):
-  - flask
-  - flask-sqlalchemy
-  - flask-bcrypt
-  - flask-wtf
-  - flask-dance[sqla]
-  - flask-login
-  - blinker
-  - flask-oauth
+* running the requirements.txt file to install pip packages: `pip install -r requirements.txt`
 
 ## How to Run
   1. first, open your terminal and `cd` to the project folder.

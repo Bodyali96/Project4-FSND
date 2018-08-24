@@ -4,9 +4,6 @@ All the code in one file, this is not the best practice,
 but I had to do this to avoid import problems
 The code uses Flask micro-framework and its extentions,
 in addtion to OAuth extention to add a third-party authentication
-packages needed to be installed using pip before running the file:
-flask, flask-sqlalchemy flask-bcrypt, flask-wtf, Flask-Dance[sqla],
-flask-login, blinker, flask-oauth
 NOTE: to run this app correctly, first:
 python run.py --setup
 to initialize the database and configuration,
@@ -74,8 +71,14 @@ categories = ['Soccer', 'Basketball', 'Baseball', 'Frisbee',
 
 # creating models
 
+# since we are using SQLAlchemy, the fields in the following
+# represent the columns in the tables in db with thier datatypes
+
 
 class User(db.Model, UserMixin):
+    """
+    Registered user information is stored in db
+    """
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(256), unique=True)
     email = db.Column(db.String(256), unique=True)
@@ -84,12 +87,18 @@ class User(db.Model, UserMixin):
 
 
 class Category(db.Model):
+    """
+    Categories that hold items are stored in db
+    """
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), unique=True, nullable=False)
     items = db.relationship('Item', backref='Category', lazy=True)
 
 
 class Item(db.Model):
+    """
+    items that exist in each category stored in db
+    """
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), unique=True, nullable=False)
     price = db.Column(db.Float, nullable=False)
@@ -101,6 +110,10 @@ class Item(db.Model):
 
 
 class OAuth(OAuthConsumerMixin, db.Model):
+    """
+    OAuth class that is connected to User class
+    to register github users localy in the db
+    """
     provider_user_id = db.Column(db.String(256), unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id))
     user = db.relationship(User)
@@ -109,6 +122,10 @@ class OAuth(OAuthConsumerMixin, db.Model):
 # creating forms
 
 class RegistrationForm(FlaskForm):
+    """
+    The registration form that will appear to users
+    in registration page '/register'
+    """
     username = StringField('Username',
                            validators=[DataRequired(), Length(min=2, max=20)])
     email = StringField('Email',
@@ -119,6 +136,8 @@ class RegistrationForm(FlaskForm):
                                                  EqualTo('password')])
     submit = SubmitField('Sign Up')
 
+    # the following methods ensure that either the username
+    # or the email does not already exist in the db
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user:
@@ -133,6 +152,10 @@ class RegistrationForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
+    """
+    The Login form that will appear to users
+    in Login page '/login'
+    """
     username = StringField('Username',
                            validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
@@ -141,6 +164,11 @@ class LoginForm(FlaskForm):
 
 
 class ItemForm(FlaskForm):
+    """
+    This ItemForm has two different uses:
+    - adding new item to the db
+    - editing an existing item in the db
+    """
     name = StringField('Item Name', validators=[DataRequired()])
     price = DecimalField('Price', validators=[DataRequired()])
     desc = StringField('Description', validators=[DataRequired()])
@@ -278,17 +306,38 @@ def catalog_json():
         )
     return jsonify({'Categories': categories_list})
 
+
+@app.route('/catalog/<category_name>/<item_name>/JSON')
+def ItemJSON(category_name, item_name):
+    try:
+        category = Category.query.filter_by(name=category_name).one()
+        item = Item.query.filter_by(name=item_name, category_name=category.name).one()
+        return jsonify(
+            item=[
+                {'name': item.name,
+                 'price': item.price,
+                 'description': item.desc,
+                 'category_name': item.category_name,
+                 'owner_username': item.owner_username
+                 }
+            ]
+        )
+    except NoResultFound:
+        return jsonify(None)
+
 # creating routes
 
 
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
+        # prevent user from login if he is already logged in
         return redirect(url_for('home'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(
             username=form.username.data.lower()).first()
+        # decrypt the hashed password to compare it with original pass
         if user and bcrypt.check_password_hash(
             user.password, form.password.data
         ):
@@ -314,6 +363,7 @@ def login():
 @app.route("/logout")
 @login_required
 def logout():
+    # using logout_user from flask to end the active session
     logout_user()
     flash("You have logged out", category='success')
     return redirect(url_for("home"))
@@ -322,9 +372,11 @@ def logout():
 @app.route("/register", methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
+        # same as login, user can't register if he is already signed in
         return redirect(url_for('home'))
     form = RegistrationForm()
     if form.validate_on_submit():
+        # hashing the password and adding the user to db
         hashed_password =\
             bcrypt.generate_password_hash(form.password.data).decode('utf-8')
         user = \
@@ -360,6 +412,13 @@ def account():
 @app.route("/new_item", methods=['GET', 'POST'])
 @login_required
 def new_item():
+    """
+    adding new item to the db
+    this is a feature for signed in users only
+    that is why we include @login_required
+    in the top and included the owner_username as
+    a column in the database
+    """
     form = ItemForm()
     if form.validate_on_submit():
         item = Item(
@@ -382,6 +441,9 @@ def new_item():
 
 @app.route("/category/<category_name>")
 def category(category_name):
+    """
+    showing the category specefied by the url with its items
+    """
     cat = Category.query.filter_by(name=category_name).first()
     return render_template(
         'category.html',
@@ -396,6 +458,7 @@ def category(category_name):
 def edit_item(item_id):
     item = Item.query.get_or_404(item_id)
     if item.owner_username != current_user.username:
+        # to prevent the user from editing other users items
         abort(403)
     form = ItemForm()
     if form.validate_on_submit():
@@ -407,6 +470,7 @@ def edit_item(item_id):
         flash('Your item has been updated!', 'success')
         return redirect(url_for('account'))
     elif request.method == 'GET':
+        # to show the itemd info by default when user loads the form
         form.name.data = item.name
         form.price.data = item.price
         form.desc.data = item.desc
@@ -428,6 +492,18 @@ def delete_item(item_id):
 
 
 if __name__ == "__main__":
+    """
+    when running the file,
+    you should first run the command:
+    python run.py --setup
+    to initialize the db and configure categories
+    then you can run the file in the normal way:
+    python run.py
+    and open your website and go to the link:
+    http://localhost:5000
+    be sure that there is no application on your
+    device using the port 5000 on the localhost
+    """
     if "--setup" in sys.argv:
         with app.app_context():
             db.create_all()
